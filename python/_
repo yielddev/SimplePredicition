@@ -1,0 +1,47 @@
+from web3 import Web3
+from web3_sim import ether, wei
+from web3_prediction import Prediction
+from web3_mock_usdc import MockUsdc
+from web3_simulated_lp import SimulatedLP
+import numpy as np
+import matplotlib.pyplot as plt
+
+def main():
+    w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+    prediction = Prediction("0xa45e2e9f6fee59edfa2586c6ef7ecee1f9cac51c", w3)
+
+    print(prediction.side_one.contract.address)
+    print(prediction.side_two.contract.address)
+
+    usd = MockUsdc('0x909b91a21d0f86709c4eec651e82a4efb028c330', w3)
+    account_one = w3.eth.accounts[1]
+    print(usd.mint(account_one, ether(10)))
+    print(usd.approve(account_one, prediction.contract.address, ether(2)))
+    print(prediction.mint_two_sides(account_one, ether(2)))
+
+    print(wei(prediction.side_one.balance(account_one)))
+    print(wei(prediction.side_two.balance(account_one)))
+
+    lp1 = SimulatedLP(w3.eth.accounts[2], usd, ether(100))
+    print(wei(lp1.usd_balance()))
+    lp1.get_two_sided_tokens(prediction, ether(10))
+    inventory = lp1.get_inventory(prediction)
+    print(wei(inventory["side_one"]))
+    print(wei(inventory["side_two"]))
+
+def simulated_lp_hoarde():
+    a, m = 2., 100.
+    s = (np.random.pareto(a, 10000) + 1) * m
+    print(s)
+    count = 0
+    for x in s:
+        count = count + x
+    print("Aggregate: ", str(count))
+    count, bins, _ = plt.hist(s, 100, density=True)
+    fit = a*m**a / bins**(a+1)
+    plt.plot(bins, max(count)*fit/max(fit), linewidth=2, color='r')
+    plt.savefig("./graph.png")
+
+
+simulated_lp_hoarde()
+#main()
